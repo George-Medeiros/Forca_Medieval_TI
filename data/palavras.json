@@ -1,0 +1,12 @@
+[
+    {"palavra": "PYTHON", "dica": "Linguagem de programação de alto nível, versátil e de sintaxe limpa."},
+    {"palavra": "LINUX", "dica": "Kernel de sistema operacional de código aberto, base de muitas distribuições."},
+    {"palavra": "DOCKER", "dica": "Plataforma para criar, implantar e rodar aplicações em containers."},
+    {"palavra": "KERNEL", "dica": "Núcleo central de um sistema operacional, que gerencia o hardware."},
+    {"palavra": "CLOUD", "dica": "Modelo de computação onde recursos são entregues sob demanda via internet."},
+    {"palavra": "BINARY", "dica": "Sistema de numeração de base 2, fundamental para a computação moderna."},
+    {"palavra": "SCRIPT", "dica": "Arquivo de texto contendo uma sequência de comandos executáveis."},
+    {"palavra": "MODEM", "dica": "Dispositivo que converte sinais digitais em analógicos e vice-versa para conexão."},
+    {"palavra": "BACKUP", "dica": "Cópia de segurança de dados para proteção contra perdas acidentais."},
+    {"palavra": "ROUTER", "dica": "Equipamento de rede que encaminha pacotes de dados entre diferentes redes."}
+]
