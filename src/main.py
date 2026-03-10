@@ -9,7 +9,7 @@ from logic import HangmanSession
 WIDTH, HEIGHT = 1280, 720
 FPS = 60
 
-# Cores RGB
+# Cores RGB - Mantemos o padrão medieval/TI
 COLOR_TEXT = (245, 235, 200) # Bege claro (medieval)
 COLOR_DICA = (180, 210, 245) # Azul claro para destacar o CONCEITO TI
 COLOR_ALERT = (255, 80, 80)  # Vermelho para erros
@@ -35,11 +35,11 @@ def main():
     # --- Instancia a Sessão de Lógica ---
     sessao_jogo = HangmanSession()
 
-    # --- Carregamento de Assets (Caminhos Seguros) ---
+    # --- Carregamento de Assets Base (Caminhos Seguros) ---
     base_path = os.path.dirname(__file__)
     
     try:
-        # Imagem de Fundo
+        # Imagem de Fundo (Praça medieval)
         bg_path = os.path.join(base_path, "..", "assets", "images", "background.png")
         background_img = pygame.image.load(bg_path).convert()
         background_img = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
@@ -51,11 +51,59 @@ def main():
         pygame.mixer.music.play(-1) # Loop infinito
         
     except FileNotFoundError as e:
-        print(f"Alerta: Asset não encontrado ({e}). Iniciando em modo genérico.")
+        print(f"Alerta: Asset base não encontrado ({e}). Iniciando em modo genérico.")
         # Plano B: Fundo sólido
         background_img = pygame.Surface((WIDTH, HEIGHT))
         background_img.fill((40, 40, 45)) # Cinza escuro sombrio
         pygame.mixer.music.stop()
+
+    # --- NOVO BLOCO (SUBSTITUIÇÃO): Geração de Placeholder em Código ---
+    # Como não temos as imagens em arquivo, vamos criar 'Surfaces' em branco
+    # e desenhar formas geométricas nelas professionalmente.
+    forca_images = []
+    for i in range(7): # Gera 7 surfaces (0 a 6 erros)
+        # Cria uma superfície transparente de 300x400
+        surface = pygame.Surface((300, 400), pygame.SRCALPHA)
+        
+        # --- Definição de Cores e Posições Comuns ---
+        COLOR_FORCA = (80, 50, 20) # Marrom madeira escura
+        COLOR_CORPO = (200, 200, 150) # Amarelo palha/pele clara
+        
+        # 1. Desenha a Forca (Sempre presente, de 0 a 6 erros)
+        # Base
+        pygame.draw.rect(surface, COLOR_FORCA, (50, 380, 200, 20), border_radius=5)
+        # Poste Vertical
+        pygame.draw.rect(surface, COLOR_FORCA, (80, 50, 20, 330), border_radius=5)
+        # Trave Horizontal
+        pygame.draw.rect(surface, COLOR_FORCA, (80, 50, 150, 20), border_radius=5)
+        # Corda
+        pygame.draw.line(surface, COLOR_TEXT, (200, 70), (200, 120), 5)
+        # Estrutura de Apoio
+        pygame.draw.line(surface, COLOR_FORCA, (80, 120), (130, 50), 10)
+
+        # 2. Desenha o Boneco (Baseado no número de erros 'i')
+        # 1 erro: Cabeça
+        if i >= 1:
+            pygame.draw.circle(surface, COLOR_CORPO, (200, 145), 25)
+        # 2 erros: Corpo
+        if i >= 2:
+            pygame.draw.line(surface, COLOR_CORPO, (200, 170), (200, 250), 10)
+        # 3 erros: Braço Esquerdo
+        if i >= 3:
+            pygame.draw.line(surface, COLOR_CORPO, (200, 190), (160, 220), 8)
+        # 4 erros: Braço Direito
+        if i >= 4:
+            pygame.draw.line(surface, COLOR_CORPO, (200, 190), (240, 220), 8)
+        # 5 erros: Perna Esquerda
+        if i >= 5:
+            pygame.draw.line(surface, COLOR_CORPO, (200, 250), (170, 310), 8)
+        # 6 erros: Perna Direita (ENFORCADO)
+        if i >= 6:
+            pygame.draw.line(surface, COLOR_CORPO, (200, 250), (230, 310), 8)
+        
+        # Adiciona a surface gerada à nossa lista de imagens
+        forca_images.append(surface)
+    # -------------------------------------------------------------------
 
     # --- Carregamento de Fontes ---
     try:
@@ -128,8 +176,7 @@ def main():
             b_text_rect = b_text.get_rect(center=button_jogar_rect.center)
             screen.blit(b_text, b_text_rect)
 
-            # --- NOVO: SEÇÃO DE COMANDOS DE CONTROLE (na parte inferior) ---
-            # Definimos as linhas de texto
+            # SEÇÃO DE COMANDOS DE CONTROLE (na parte inferior)
             comandos = [
                 "Comandos de Controle:",
                 "[MOU] - Clicar em JOGAR",
@@ -137,32 +184,40 @@ def main():
                 "[ESC] - Voltar ao Menu / Sair"
             ]
 
-            # Posição inicial Y (perto do fundo, centralizado)
             y_start = HEIGHT - 140
-            line_height = 32 # Espaçamento entre linhas
+            line_height = 32
 
-            # Loop para desenhar cada linha professionalmente
             for i, linha in enumerate(comandos):
-                # Usamos a dica_font (limpa) para instruções
                 cmd_surface = dica_font.render(linha, True, COLOR_TEXT)
-                # Centraliza em X, incrementa Y a cada linha
                 cmd_rect = cmd_surface.get_rect(center=(WIDTH // 2, y_start + (i * line_height)))
                 screen.blit(cmd_surface, cmd_rect)
-            # -------------------------------------------------------------
 
         # --- Renderização: PLAYING (JOGANDO) ---
         elif current_state == STATE_PLAYING:
-            # DICA (O Conceito TI)
+            # DICA (O Conceito TI - Destaque no Topo)
             dica_str = f"CONCEITO TI: {sessao_jogo.dica}"
             dica_surface = dica_font.render(dica_str, True, COLOR_DICA)
             dica_rect = dica_surface.get_rect(center=(WIDTH // 2, 80)) 
             screen.blit(dica_surface, dica_rect)
 
-            # PALAVRA OCULTA
+            # PALAVRA OCULTA (Centralizada)
             palavra_oculta = sessao_jogo.get_palavra_oculta()
             p_surface = word_font.render(palavra_oculta, True, COLOR_TEXT)
             p_rect = p_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2))
             screen.blit(p_surface, p_rect)
+
+            # --- NOVO BLOCO (DO MÓDULO 4): Desenho Dinâmico da Forca Gerada ---
+            # Pegamos a imagem correspondente ao número de erros (que é 6 - tentativas_restantes)
+            erros_atuais = 6 - sessao_jogo.tentativas_restantes
+            # Pega a surface que geramos no Módulo 2
+            forca_surface = forca_images[erros_atuais]
+            
+            # Centralizamos a forca no meio do tablado da imagem de fundo
+            forca_rect = forca_surface.get_rect(center=(WIDTH * 0.70, HEIGHT * 0.60))
+            
+            # Desenha a forca sobre o tablado
+            screen.blit(forca_surface, forca_rect)
+            # -------------------------------------------------------------
 
             # STATUS (Vidas e Letras Erradas nas Laterais Inferiores)
             vidas_text = button_font.render(f"Vidas: {sessao_jogo.tentativas_restantes}", True, COLOR_TEXT)
@@ -180,16 +235,19 @@ def main():
                 overlay.fill((0, 0, 0)) # Preto
                 screen.blit(overlay, (0, 0))
 
-                # Mensagem Final
+                # Mensagem Final Centralizada
                 if sessao_jogo.venceu:
                     end_text = title_font.render("CONCEITO DOMINADO!", True, (100, 255, 100)) # Verde
                 else:
                     end_text = title_font.render("ENFORCADO!", True, COLOR_ALERT) # Vermelho
+                    # Revelar a palavra oculta
                     revelar_text = dica_font.render(f"A palavra era: {sessao_jogo.palavra_completa}", True, COLOR_TEXT)
                     revelar_rect = revelar_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 50))
                     screen.blit(revelar_text, revelar_rect)
 
+                # Instrução para reiniciar/voltar
                 restart_text = button_font.render("Pressione ESC para o Menu", True, COLOR_TEXT)
+
                 end_rect = end_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
                 restart_rect = restart_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 120))
                 
