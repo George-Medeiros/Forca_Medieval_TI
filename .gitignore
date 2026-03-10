@@ -1,1 +1,11 @@
+# Ambientes virtuais (NUNCA envie isso, eles são pesados e específicos para o seu PC)
+venv/
+.venv/
+
+# Arquivos temporários do Python (caches de execução)
 __pycache__/
+*.py[cod]
+
+# Arquivos ocultos do sistema (opcional mas bom para evitar lixo)
+.DS_Store
+Thumbs.db
