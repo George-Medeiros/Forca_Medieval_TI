@@ -2,252 +2,193 @@
 import pygame
 import sys
 import os
-# Importamos a Classe de lógica (HangmanSession)
 from logic import HangmanSession 
 
-# --- Configurações Profissionais ---
+# Configurações de Tela
 WIDTH, HEIGHT = 1280, 720
 FPS = 60
-
-# --- 1. MELHORIA VISUAL: Mudança do Nome do Jogo ---
 GAME_TITLE = "Medieval TI - Acerte ou Forca"
-# ----------------------------------------------------
 
-# Cores RGB - Mantemos o padrão medieval/TI
-COLOR_TEXT = (245, 235, 200) # Bege claro (medieval)
-COLOR_DICA = (180, 210, 245) # Azul claro para destacar o CONCEITO TI
-COLOR_ALERT = (255, 80, 80)  # Vermelho para erros
+# Paleta de Cores para Máxima Nitidez
+COLOR_TEXT = (245, 235, 200)   # Creme Medieval
+COLOR_DICA = (255, 215, 0)     # Dourado (Contraste para a dica)
+COLOR_ALERT = (255, 80, 80)    # Vermelho Alerta
+COLOR_FORCA = (80, 50, 20)     # Marrom Madeira
+COLOR_CORPO = (200, 200, 150)  # Cor do Boneco
 
-# --- Estados do Jogo (Game States) ---
+# Estados do Jogo
 STATE_MENU = 0
 STATE_PLAYING = 1
 current_state = STATE_MENU
 
 def main():
-    global current_state # Permite alterar a variável fora da função main
+    global current_state 
     
-    # --- Inicialização ---
     pygame.init()
     pygame.mixer.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption(GAME_TITLE)
     clock = pygame.time.Clock()
 
-    # --- Instancia a Sessão de Lógica ---
     sessao_jogo = HangmanSession()
-
-    # --- Carregamento de Assets Base (Caminhos Seguros) ---
     base_path = os.path.dirname(__file__)
     
+    # --- Carregamento de Assets ---
     try:
-        # Imagem de Fundo (Praça medieval)
         bg_path = os.path.join(base_path, "..", "assets", "images", "background.png")
         background_img = pygame.image.load(bg_path).convert()
         background_img = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
         
-        # Música (Mantenha o som melancólico!)
         music_path = os.path.join(base_path, "..", "assets", "sound", "music.mp3")
         pygame.mixer.music.load(music_path)
         pygame.mixer.music.set_volume(0.5)
-        pygame.mixer.music.play(-1) # Loop infinito
-        
-    except FileNotFoundError as e:
-        print(f"Alerta: Asset base não encontrado ({e}). Iniciando em modo genérico.")
-        # Plano B: Fundo sólido
+        pygame.mixer.music.play(-1) 
+    except:
         background_img = pygame.Surface((WIDTH, HEIGHT))
-        background_img.fill((40, 40, 45)) # Cinza escuro sombrio
-        pygame.mixer.music.stop()
+        background_img.fill((40, 40, 45)) 
 
-    # --- Carregamento de Fontes ---
+    # --- Fontes ---
     try:
-        # Caminho para a fonte ttf temática
         font_path = os.path.join(base_path, "..", "assets", "fonts", "medieval.ttf")
-        
-        # --- 2. MELHORIA VISUAL: Redução da Fonte do Título ---
-        # Mudamos de 80 para 65 professionalmente para caber no céu entre as torres
-        title_font = pygame.font.Font(font_path, 65) 
-        # --------------------------------------------------------
-        
-        word_font = pygame.font.Font(font_path, 70)  # Palavra oculta grande
-        button_font = pygame.font.Font(font_path, 40) # Botões médios
-        
-        # Fonte padrão para dicas e INSTRUÇÕES (legibilidade)
-        dica_font = pygame.font.Font(None, 36) 
-        
-    except FileNotFoundError as e:
-        print(f"Erro Crítico: Fonte medieval.ttf não encontrada ({e}). O jogo não pode rodar.")
-        return # Encerra se a fonte falhar
+        title_font = pygame.font.Font(font_path, 50) 
+        credits_font = pygame.font.Font(font_path, 25) 
+        button_theme_font = pygame.font.Font(font_path, 35) 
+        command_theme_font = pygame.font.Font(font_path, 25) 
+        word_font = pygame.font.Font(font_path, 70)  
+        button_font = pygame.font.Font(font_path, 40) 
+        dica_font = pygame.font.Font(None, 38) # Fonte padrão do sistema para dicas (mais legível)
+    except:
+        print("Erro: medieval.ttf não encontrada.")
+        return 
 
-    # --- Definição do Botão JOGAR do Menu ---
-    button_jogar_rect = pygame.Rect(WIDTH // 2 - 150, HEIGHT // 2 + 50, 300, 80)
+    # Retângulo base do botão (Y será calculado dinamicamente)
+    button_jogar_rect = pygame.Rect(WIDTH // 2 - 110, 0, 220, 60)
 
-    # --- Loop Principal do Jogo ---
-    game_running = True
-    while game_running:
-        # Obtém a posição do mouse a cada quadro
-        mx, my = pygame.mouse.get_pos() 
+    # --- Loop Principal ---
+    while True:
+        mx, my = pygame.mouse.get_pos()
         
-        # --- 1. Entrada de Eventos (Event Loop) ---
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                game_running = False
+                pygame.quit()
+                sys.exit()
             
-            # --- Eventos: MENU ---
             if current_state == STATE_MENU:
-                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: # Clique esquerdo
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     if button_jogar_rect.collidepoint((mx, my)):
                         sessao_jogo.iniciar_nova_partida()
-                        current_state = STATE_PLAYING # Transição de Estado
+                        current_state = STATE_PLAYING 
             
-            # --- Eventos: PLAYING (JOGANDO) ---
             elif current_state == STATE_PLAYING:
-                # Detecta pressionamento de Teclas
                 if event.type == pygame.KEYDOWN:
-                    # Se pressionar ESC, volta pro menu
                     if event.key == pygame.K_ESCAPE:
                         current_state = STATE_MENU
-                    
-                    # Se pressionar uma tecla de letra (A-Z)
                     letter = event.unicode.upper()
                     if letter.isalpha() and len(letter) == 1:
-                        # Passa a letra para a lógica processar
                         sessao_jogo.tentar_letra(letter)
 
-        # --- 2. Desenho e Atualização (Rendering Loop) ---
-        # Fundo é o mesmo para ambas as telas (blit coloca uma imagem sobre a outra)
+        # 1. Desenha o Fundo
         screen.blit(background_img, (0, 0))
         
-        # Renderização: MENU
         if current_state == STATE_MENU:
-            # Título e Sombra (Subindo para o céu entre as torres)
-            title_text = title_font.render(GAME_TITLE, True, COLOR_TEXT)
-            
-            # --- 3. MELHORIA VISUAL: Subir Título para o Céu ---
-            # Mudamos o 'center' Y de HEIGHT // 3 (240) para 120 pixels professionalmente
-            title_rect = title_text.get_rect(center=(WIDTH // 2, 120)) 
-            shadow_text = title_font.render(GAME_TITLE, True, (0, 0, 0)) # Sombra preta
-            shadow_rect = shadow_text.get_rect(center=(WIDTH // 2 + 3, 120 + 3)) # Leve deslocamento
-            # ----------------------------------------------------
-            
-            # Desenha primeiro a sombra, depois o título
-            screen.blit(shadow_text, shadow_rect)
-            screen.blit(title_text, title_rect)
+            # --- 2. Título Principal e Sombra ---
+            pos_x, pos_y = WIDTH // 2, 85
+            t_surf = title_font.render(GAME_TITLE, True, COLOR_TEXT)
+            t_shad = title_font.render(GAME_TITLE, True, (0, 0, 0))
+            screen.blit(t_shad, (pos_x - t_surf.get_width()//2 + 3, pos_y - t_surf.get_height()//2 + 3))
+            screen.blit(t_surf, t_surf.get_rect(center=(pos_x, pos_y)))
 
-            # Botão JOGAR com efeito Hover
-            b_color = (80, 80, 100) if button_jogar_rect.collidepoint((mx, my)) else (50, 50, 60)
-            pygame.draw.rect(screen, b_color, button_jogar_rect, border_radius=10)
-            
-            # Texto do Botão (Centralizado no botão)
-            b_text = button_font.render("JOGAR", True, COLOR_TEXT)
-            b_text_rect = b_text.get_rect(center=button_jogar_rect.center)
-            screen.blit(b_text, b_text_rect)
+            # --- 3. Créditos Sombreados (George Medeiros) ---
+            cred_txt = "by George Medeiros, RU 5117806"
+            c_s = credits_font.render(cred_txt, True, COLOR_TEXT)
+            c_sh = credits_font.render(cred_txt, True, (0, 0, 0))
+            c_rect = c_s.get_rect(center=(pos_x, pos_y + 45))
+            screen.blit(c_sh, (c_rect.x + 2, c_rect.y + 2)) # Sombra
+            screen.blit(c_s, c_rect)
 
-            # SEÇÃO DE COMANDOS DE CONTROLE (na parte inferior)
-            comandos = [
+            # --- 4. Bloco de Comandos de Controle ---
+            y_base_cmds = HEIGHT - 150
+            cmds = [
                 "Comandos de Controle:",
                 "[MOU] - Clicar em JOGAR",
                 "[A-Z] - Escolher Letra (na forca)",
                 "[ESC] - Voltar ao Menu / Sair"
             ]
+            for i, txt in enumerate(cmds):
+                y_p = y_base_cmds + (i * 32)
+                txt_s = command_theme_font.render(txt, True, COLOR_TEXT)
+                txt_sh = command_theme_font.render(txt, True, (0, 0, 0))
+                screen.blit(txt_sh, txt_sh.get_rect(center=(WIDTH//2 + 2, y_p + 2))) # Sombra
+                screen.blit(txt_s, txt_s.get_rect(center=(WIDTH//2, y_p)))
 
-            y_start = HEIGHT - 140
-            line_height = 32
+            # --- 5. Botão JOGAR com Simetria Perfeita ---
+            # Posicionado exatamente entre o fim dos créditos e o início dos comandos
+            espaco_total = y_base_cmds - c_rect.bottom
+            button_jogar_rect.centery = c_rect.bottom + (espaco_total // 2)
+            
+            b_color = (80, 80, 100) if button_jogar_rect.collidepoint((mx, my)) else (50, 50, 60)
+            pygame.draw.rect(screen, b_color, button_jogar_rect, border_radius=10)
+            b_s = button_theme_font.render("JOGAR", True, COLOR_TEXT)
+            b_sh = button_theme_font.render("JOGAR", True, (0, 0, 0))
+            screen.blit(b_sh, b_sh.get_rect(center=(button_jogar_rect.centerx+2, button_jogar_rect.centery+2)))
+            screen.blit(b_s, b_s.get_rect(center=button_jogar_rect.center))
 
-            for i, linha in enumerate(comandos):
-                cmd_surface = dica_font.render(linha, True, COLOR_TEXT)
-                cmd_rect = cmd_surface.get_rect(center=(WIDTH // 2, y_start + (i * line_height)))
-                screen.blit(cmd_surface, cmd_rect)
-
-        # --- Renderização: PLAYING (JOGANDO) ---
         elif current_state == STATE_PLAYING:
-            # DICA (O Conceito TI - Destaque no Topo em Azul)
-            dica_str = f"CONCEITO TI: {sessao_jogo.dica}"
-            dica_surface = dica_font.render(dica_str, True, COLOR_DICA)
-            dica_rect = dica_surface.get_rect(center=(WIDTH // 2, 80)) 
-            screen.blit(dica_surface, dica_rect)
+            # --- 6. Tela de Jogo: Dica de TI (Dourada e Sombreada) ---
+            d_str = f"CONCEITO TI: {sessao_jogo.dica}"
+            d_s = dica_font.render(d_str, True, COLOR_DICA)
+            d_sh = dica_font.render(d_str, True, (0, 0, 0))
+            d_rect = d_s.get_rect(center=(WIDTH // 2, 80))
+            screen.blit(d_sh, (d_rect.x + 2, d_rect.y + 2)) # Sombra da dica
+            screen.blit(d_s, d_rect)
 
-            # PALAVRA OCULTA (Centralizada em fonte medieval grande)
-            palavra_oculta = sessao_jogo.get_palavra_oculta()
-            p_surface = word_font.render(palavra_oculta, True, COLOR_TEXT)
-            p_rect = p_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2))
-            screen.blit(p_surface, p_rect)
+            # --- 7. Palavra Oculta ---
+            p_s = word_font.render(sessao_jogo.get_palavra_oculta(), True, COLOR_TEXT)
+            screen.blit(p_s, p_s.get_rect(center=(WIDTH // 2, HEIGHT // 2)))
 
-            # --- NOVO BLOCO (DO MÓDULO 4): Desenho Dinâmico da Forca Gerada Geometricamente ---
-            # Pegamos a imagem correspondente ao número de erros (que é 6 - tentativas_restantes)
-            erros_atuais = 6 - sessao_jogo.tentativas_restantes
-            
-            # Profissional: Vamos gerar a forca geometricamente para não travar o desenvolvimento
-            # (Usamos o código do Plano B que geramos anteriormente)
-            forca_surface = pygame.Surface((300, 400), pygame.SRCALPHA)
-            COLOR_FORCA = (80, 50, 20) # Marrom madeira escura
-            COLOR_CORPO = (200, 200, 150) # Amarelo palha/pele clara
-            
-            # 1. Desenha a Forca Geometricamente
-            pygame.draw.rect(forca_surface, COLOR_FORCA, (50, 380, 200, 20), border_radius=5)
-            pygame.draw.rect(forca_surface, COLOR_FORCA, (80, 50, 20, 330), border_radius=5)
-            pygame.draw.rect(forca_surface, COLOR_FORCA, (80, 50, 150, 20), border_radius=5)
-            pygame.draw.line(forca_surface, COLOR_TEXT, (200, 70), (200, 120), 5)
-            pygame.draw.line(forca_surface, COLOR_FORCA, (80, 120), (130, 50), 10)
+            # --- 8. Desenho da Forca e Personagem ---
+            erros = 6 - sessao_jogo.tentativas_restantes
+            f_x, f_y = WIDTH * 0.75, HEIGHT * 0.55
+            # Estrutura
+            pygame.draw.rect(screen, COLOR_FORCA, (f_x-100, f_y+150, 200, 20)) # Base
+            pygame.draw.rect(screen, COLOR_FORCA, (f_x-70, f_y-180, 20, 330))  # Poste
+            pygame.draw.rect(screen, COLOR_FORCA, (f_x-70, f_y-180, 150, 20)) # Topo
+            pygame.draw.line(screen, (150,100,50), (f_x+50, f_y-160), (f_x+50, f_y-110), 4) # Corda
+            # Boneco
+            if erros >= 1: pygame.draw.circle(screen, COLOR_CORPO, (int(f_x+50), int(f_y-85)), 25)
+            if erros >= 2: pygame.draw.line(screen, COLOR_CORPO, (f_x+50, f_y-60), (f_x+50, f_y+20), 8)
+            if erros >= 3: pygame.draw.line(screen, COLOR_CORPO, (f_x+50, f_y-40), (f_x+10, f_y-10), 6)
+            if erros >= 4: pygame.draw.line(screen, COLOR_CORPO, (f_x+50, f_y-40), (f_x+90, f_y-10), 6)
+            if erros >= 5: pygame.draw.line(screen, COLOR_CORPO, (f_x+50, f_y+20), (f_x+20, f_y+80), 6)
+            if erros >= 6: pygame.draw.line(screen, COLOR_CORPO, (f_x+50, f_y+20), (f_x+80, f_y+80), 6)
 
-            # 2. Desenha o Boneco Geometricamente
-            if erros_atuais >= 1: pygame.draw.circle(forca_surface, COLOR_CORPO, (200, 145), 25)
-            if erros_atuais >= 2: pygame.draw.line(forca_surface, COLOR_CORPO, (200, 170), (200, 250), 10)
-            if erros_atuais >= 3: pygame.draw.line(forca_surface, COLOR_CORPO, (200, 190), (160, 220), 8)
-            if erros_atuais >= 4: pygame.draw.line(forca_surface, COLOR_CORPO, (200, 190), (240, 220), 8)
-            if erros_atuais >= 5: pygame.draw.line(forca_surface, COLOR_CORPO, (200, 250), (170, 310), 8)
-            if erros_atuais >= 6: pygame.draw.line(forca_surface, COLOR_CORPO, (200, 250), (230, 310), 8)
-            # -------------------------------------------------------------------
-            
-            # Centralizamos a forca no meio do tablado da imagem de fundo
-            forca_rect = forca_surface.get_rect(center=(WIDTH * 0.70, HEIGHT * 0.60))
-            
-            # Desenha a forca sobre o tablado
-            screen.blit(forca_surface, forca_rect)
-            # -------------------------------------------------------------
+            # --- 9. Status da Partida ---
+            v_s = button_font.render(f"Vidas: {sessao_jogo.tentativas_restantes}", True, COLOR_TEXT)
+            screen.blit(v_s, (50, HEIGHT - 100))
+            e_s = dica_font.render(f"Erros: {' '.join(sorted(sessao_jogo.letras_erradas))}", True, COLOR_ALERT)
+            screen.blit(e_s, (WIDTH - 450, HEIGHT - 100))
 
-            # STATUS (Vidas e Letras Erradas nas Laterais Inferiores)
-            vidas_text = button_font.render(f"Vidas: {sessao_jogo.tentativas_restantes}", True, COLOR_TEXT)
-            screen.blit(vidas_text, (50, HEIGHT - 100)) 
-
-            # Letras Erradas (em Vermelho para Alerta)
-            erradas_str = " ".join(sorted(list(sessao_jogo.letras_erradas)))
-            erradas_text = dica_font.render(f"Erros: {erradas_str}", True, COLOR_ALERT)
-            screen.blit(erradas_text, (WIDTH - 400, HEIGHT - 100)) 
-
-            # TELA FINAL (Vitória/Derrota Overlay semi-transparente)
+            # --- 10. Telas de Vitória / Derrota ---
             if sessao_jogo.venceu or sessao_jogo.perdeu:
-                overlay = pygame.Surface((WIDTH, HEIGHT))
-                overlay.set_alpha(180) # Transparência (0-255)
-                overlay.fill((0, 0, 0)) # Preto
-                screen.blit(overlay, (0, 0))
-
-                # Mensagem Final Centralizada
-                if sessao_jogo.venceu:
-                    end_text = title_font.render("CONCEITO DOMINADO!", True, (100, 255, 100)) # Verde
-                else:
-                    end_text = title_font.render("ENFORCADO!", True, COLOR_ALERT) # Vermelho
-                    # Revelar a palavra oculta
-                    revelar_text = dica_font.render(f"A palavra era: {sessao_jogo.palavra_completa}", True, COLOR_TEXT)
-                    revelar_rect = revelar_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 50))
-                    screen.blit(revelar_text, revelar_rect)
-
-                # Instrução para reiniciar/voltar
-                restart_text = button_font.render("Pressione ESC para o Menu", True, COLOR_TEXT)
-
-                end_rect = end_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
-                restart_rect = restart_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 120))
+                ov = pygame.Surface((WIDTH, HEIGHT)); ov.set_alpha(190); ov.fill((0,0,0))
+                screen.blit(ov, (0,0))
                 
-                screen.blit(end_text, end_rect)
-                screen.blit(restart_text, restart_rect)
+                texto_fim = "CONCEITO DOMINADO!" if sessao_jogo.venceu else "ENFORCADO!"
+                cor_fim = (100, 255, 100) if sessao_jogo.venceu else COLOR_ALERT
+                msg = title_font.render(texto_fim, True, cor_fim)
+                screen.blit(msg, msg.get_rect(center=(WIDTH//2, HEIGHT//2 - 50)))
+                
+                if sessao_jogo.perdeu:
+                    revelar = dica_font.render(f"A palavra era: {sessao_jogo.palavra_completa}", True, COLOR_TEXT)
+                    screen.blit(revelar, revelar.get_rect(center=(WIDTH//2, HEIGHT//2 + 20)))
+                
+                rst = button_font.render("Pressione ESC para o Menu", True, COLOR_TEXT)
+                screen.blit(rst, rst.get_rect(center=(WIDTH//2, HEIGHT//2 + 100)))
 
-        # Atualiza o display e segura o FPS (60 quadros por segundo)
         pygame.display.flip()
         clock.tick(FPS)
 
-    # Encerramento Limpo (desliga o som e fecha o Pygame)
-    pygame.mixer.quit()
-    pygame.quit()
-    sys.exit()
-
 if __name__ == "__main__":
     main()
+
+    
